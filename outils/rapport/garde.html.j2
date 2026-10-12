@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Page de garde</title>
+<link rel="stylesheet" href="../../outils/rapport/style.css">
+<style>
+@page { size: A4; margin: 0; }
+body { width: 210mm; height: 297mm; position: relative; overflow: hidden; }
+.bande { position: absolute; left: 0; top: 0; width: 210mm; height: 118mm; background: #1F3864; }
+.bande .haut { position: absolute; left: 20mm; top: 18mm; color: #c9d8f0; font-size: 9.5pt; letter-spacing: 0.6pt; text-transform: uppercase; }
+.bande h1 { position: absolute; left: 20mm; right: 22mm; top: 38mm; color: #fff; font-size: 25pt; line-height: 1.16; margin: 0;
+            break-before: auto; letter-spacing: -0.4pt; }
+.bande .sous { position: absolute; left: 20mm; right: 26mm; top: 86mm; color: #DCE6F2; font-size: 11pt; line-height: 1.4; }
+.trait { position: absolute; left: 20mm; top: 128mm; width: 28mm; height: 2.2pt; background: #2a78d6; }
+.meta { position: absolute; left: 20mm; top: 136mm; right: 20mm; font-size: 10pt; line-height: 1.6; color: #1b1b1a; }
+.meta .k { color: #52514e; display: inline-block; width: 42mm; }
+.contenu { position: absolute; left: 20mm; right: 20mm; top: 182mm; }
+.contenu h2 { margin: 0 0 6pt; font-size: 10.5pt; }
+.contenu ol { columns: 2; column-gap: 12mm; font-size: 9pt; color: #1b1b1a; padding-left: 13pt; margin: 0; }
+.contenu li { break-inside: avoid; margin-bottom: 3pt; }
+.bas { position: absolute; left: 20mm; right: 20mm; bottom: 16mm; font-size: 7.8pt; color: #898781; border-top: 0.6pt solid #d9d8d2; padding-top: 5pt; }
+</style></head>
+<body>
+<div class="bande">
+  <div class="haut">CORE Group Partners Project (CGPP) RDC · Information stratégique</div>
+  <h1>Riposte à la MVE-17 : données, qualité, indicateurs et SitRep automatisé</h1>
+  <div class="sous">Analyse des documents de la riposte au virus Bundibugyo, contrôle qualité des données, matrice maîtresse des indicateurs, architecture de données et chaîne d'automatisation du SitRep à partir des bases Excel</div>
+</div>
+<div class="trait"></div>
+<div class="meta">
+  <div><span class="k">Préparé par</span>Etienne Ntumba Kabongo, Senior Data Analyst, Information stratégique (SI)</div>
+  <div><span class="k">Date</span>{{ date_doc }} (version 1.0, document de travail)</div>
+  <div><span class="k">Données</span>SitReps nationaux n° {{ N.sitrep_prec }} et {{ N.sitrep }} (7 et 10 octobre 2026), Weekly Updates CGPP des 28 et 30 septembre, classeur hebdomadaire, plans de travail, comptes rendus de coordination</div>
+  <div><span class="k">Livrables associés</span>boîte à outils <code>cgpp_si</code> : scripts Python, base Excel, canevas Excel et Word, rapport de contrôle qualité, SitRep CGPP généré</div>
+</div>
+<div class="contenu">
+  <h2>Contenu</h2>
+  <ol>
+    <li>Résumé exécutif</li>
+    <li>Le projet CGPP dans la riposte</li>
+    <li>Les sources de données</li>
+    <li>Situation épidémiologique et analyses</li>
+    <li>Contrôle qualité des données</li>
+    <li>Cadre d'indicateurs : corrections et ajouts</li>
+    <li>Architecture de données proposée</li>
+    <li>Le SitRep amélioré</li>
+    <li>Automatiser le SitRep à partir des bases Excel</li>
+    <li>Feuille de route et décisions</li>
+    <li>Annexes : anomalies, matrice, modèle de données, livrables</li>
+  </ol>
+</div>
+<div class="bas">Document de travail interne. Les chiffres épidémiologiques proviennent des SitReps nationaux de l'INSP (SGI MVE-17) et n'ont pas été modifiés ; les écarts relevés sont signalés pour correction par leurs producteurs. Les listes de présence des réunions contiennent des données personnelles : ne pas les diffuser hors de l'équipe.</div>
+</body></html>

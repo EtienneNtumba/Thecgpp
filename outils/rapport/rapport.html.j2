@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<title>Information stratégique CGPP, riposte MVE-17</title>
+<link rel="stylesheet" href="../../outils/rapport/style.css">
+</head>
+<body>
+
+<h1 class="sans-saut">Sommaire</h1>
+<div class="toc">
+{% for e in toc %}<div class="l{{ e.niv }}"><span class="titre">{{ e.titre }}</span><span class="pts"></span><span class="pg">{{ e.page if e.page else "00" }}</span></div>
+{% endfor %}
+</div>
+
+<!-- =================================================================== 1 -->
+<h1 data-toc="1">1. Résumé exécutif<span class="ancre">⟦H1⟧</span></h1>
+<p class="chapo">Ce document fait le point sur l'ensemble des données de la riposte dont dispose CGPP au {{ date_doc }}, en vérifie la qualité, propose un cadre d'indicateurs unique et une architecture de données, et livre une chaîne Python qui produit automatiquement un SitRep CGPP à partir de bases Excel.</p>
+
+<div class="tuiles">
+  <div class="tuile"><div class="l">Cas confirmés au 10/10</div><div class="v">{{ N.cas }}</div><div class="s">x {{ N.facteur_085 }} depuis le 7 août</div></div>
+  <div class="tuile"><div class="l">Décès confirmés</div><div class="v">{{ N.deces }}</div><div class="s">létalité {{ N.letalite }}</div></div>
+  <div class="tuile"><div class="l">Cas dans les 12 ZS CGPP</div><div class="v">{{ C.cas }}</div><div class="s">{{ C.part }} du total national</div></div>
+  <div class="tuile"><div class="l">Saisie hebdomadaire des IP</div><div class="v">{{ completude }}</div><div class="s">{{ cellules }} cellules attendues</div></div>
+</div>
+
+<h2 data-toc="2">Ce que montrent les données<span class="ancre">⟦H2⟧</span></h2>
+<ul>
+  <li><strong>L'épidémie reste très active</strong> : {{ Q.cas }} cas et {{ Q.deces }} décès en {{ Q.jours }} jours (du {{ Q.debut }} au {{ Q.fin }}), soit {{ Q.par_jour }} cas par jour ; selon les intervalles entre SitReps, le rythme varie de {{ Q.min }} à {{ Q.max }} cas par jour, sans baisse continue. Le cumul a plus que doublé en {{ N.jours_085 }} jours ({{ N.cas_085 }} cas le 7 août).</li>
+  <li><strong>Elle se déplace vers le Nord-Kivu</strong> : sa part des cas cumulés passe de {{ part_nk_085 }} à {{ part_nk }}, et il fournit {{ Q.part_nk }} des nouveaux cas depuis le {{ Q.debut }} ; le Haut-Uélé et le Nord-Kivu ont été multipliés par 4 depuis le 7 août, l'Ituri par 1,8.</li>
+  <li><strong>Des foyers accélèrent hors du dispositif CGPP</strong> : Mandima (+31 cas en 3 jours), Mabalako, Lubero, Makiso-Kisangani, Bunia et Nizi. Sur les 15 ZS à plus forte hausse, {{ V.top15_cgpp }} seulement figurent dans le classeur CGPP.</li>
+  <li><strong>La détection reste tardive</strong> : {{ post146 }} des nouveaux cas du 7 octobre et {{ post149 }} de ceux du 10 octobre ont été confirmés après le décès ; c'est précisément le créneau de la surveillance à base communautaire (SBC) de CGPP.</li>
+  <li><strong>Le suivi des contacts reste sous le seuil</strong> de 95&nbsp;% partout sauf au Haut-Uélé le 10/10, alors que la charge a presque doublé (de {{ N.contacts_085 }} contacts attendus le 7 août à {{ tot_contacts_146 }} le 7 octobre).</li>
+</ul>
+
+<h2 data-toc="3">Ce que montre le contrôle de qualité<span class="ancre">⟦H3⟧</span></h2>
+<p>{{ qc.n }} contrôles automatiques ont été exécutés sur les douze documents : {{ qc.ok }} sont conformes, {{ qc.echecs }} échouent et {{ qc.verif }} sont à vérifier, dont <strong>{{ qc.crit }} anomalies critiques</strong>, {{ qc.maj }} majeures et {{ qc.mineures }} mineures. Les plus lourdes de conséquences :</p>
+<ul>
+  <li>Le classeur hebdomadaire CGPP n'est renseigné qu'à {{ completude }} (seul World Vision a saisi, pour les semaines 36 et 37) et <strong>additionne des pourcentages</strong> entre semaines et entre partenaires ; la mise à jour DOS du lundi part donc incomplète et en partie fausse.</li>
+  <li><strong>Deux jeux de cibles incompatibles</strong> coexistent : le plan de travail DOS (4&nbsp;M$) et la Tranche 5 (2,8&nbsp;M$), dont les cibles sont 2,5 à 23 fois plus élevées pour un budget plus faible.</li>
+  <li>Le SitRep national du 10/10 publie un taux de suivi des contacts et un total d'alertes <strong>sans l'Ituri ni le Sud-Ubangi</strong>, puis les compare au jour précédent ; quatre taux d'occupation publiés le 07/10 sont faux, et des chiffres sont repris d'un SitRep à l'autre.</li>
+  <li>Les cumuls cités en réunion de coordination ne se raccordent pas aux SitReps (6&nbsp;292 puis 6&nbsp;422 cas en Ituri ; un ratio de létalité inversé).</li>
+  <li>Le <strong>Weekly Update CGPP</strong> du 30 septembre publie {{ wu.ecarts }}, ne couvre ni IMC ni IRC et date de {{ wu.retard }} jours au moment du SitRep du 10 octobre : il ne peut pas servir tel quel de rapport au bailleur.</li>
+</ul>
+
+<h2 data-toc="4">Ce qui est proposé et livré<span class="ancre">⟦H4⟧</span></h2>
+<ol>
+  <li><strong>Une matrice maîtresse de {{ mat_tot.total }} indicateurs</strong> à identifiants stables (texte), qui réconcilie le cadre global, la matrice de Dr Barclay, le plan DOS et la Tranche 5 : {{ mat_tot.corriger }} indicateurs à corriger, 26 indicateurs nouveaux proposés (dont la part des nouveaux cas issus des listes de contacts, la détection post-mortem, les délais 7-1-7, la complétude SBC) et {{ n_t5_only }} propres à la Tranche 5.</li>
+  <li><strong>Une base Excel normalisée</strong> ({{ n_tables }} tables en format long, listes déroulantes, dictionnaire de données) qui devient la source unique des rapports, avec un canevas vide prêt à l'emploi.</li>
+  <li><strong>Une chaîne Python</strong> (<code>pipeline.py</code>) qui extrait les SitReps nationaux (.doc) et les Weekly Updates CGPP, restructure les saisies des IP, exécute les {{ qc.n }} contrôles, calcule les analyses et <strong>génère le SitRep CGPP en Word et en PDF</strong> à partir d'un canevas Word modifiable.</li>
+  <li><strong>Un SitRep CGPP amélioré</strong> de {{ pages_sitrep }} pages : complétude des sources, huit tuiles, messages clés rédigés par règles, rythme de l'épidémie sur cinq SitReps, tableaux par province et par ZS CGPP, données opérationnelles des IP aux totaux recalculés, performance contre cibles, sécurité, autres épidémies, points d'action et qualité des données.</li>
+</ol>
+<div class="encadre decision">
+<h3>Décisions attendues cette semaine</h3>
+<ul>
+  <li>Choisir le jeu de cibles de référence (DOS ou Tranche 5) et la période à laquelle il s'applique.</li>
+  <li>Obtenir la saisie des semaines 36 à 41 par ADRA, IMC et IRC, et 38 à 41 par World Vision ; désigner un point focal données par partenaire.</li>
+  <li>Transmettre le formulaire ODK (XLSForm) pour aligner la fiche SBC sur les définitions, et la série complète des SitReps 001 à 149.</li>
+  <li>Valider le canevas du SitRep CGPP et le calendrier de production (vendredi saisie, samedi contrôle, lundi DOS).</li>
+  <li>Faire produire le tableau du Weekly Update à partir de la base (totaux par formule, IMC et IRC inclus) et l'envoyer le lundi.</li>
+</ul>
+</div>
+
+<!-- =================================================================== 2 -->
+<h1 data-toc="5">2. Le projet CGPP dans la riposte<span class="ancre">⟦H5⟧</span></h1>
+
+<h2 data-toc="6">2.1 L'épidémie en bref<span class="ancre">⟦H6⟧</span></h2>
+<p>La 17<sup>e</sup> épidémie de maladie à virus Ebola (MVE) de la RDC est due au virus Bundibugyo. Selon la chronologie des SitReps nationaux, les premiers cas suspects ont été détectés à partir du 24 avril 2026 et la confirmation biologique, suivie de la déclaration officielle, est intervenue le 15 mai ; l'urgence de santé publique a été déclarée de portée nationale puis continentale les 17 et 18 mai. Au 10 octobre (SitRep n° {{ N.sitrep }}), le pays cumule {{ N.cas }} cas confirmés et {{ N.deces }} décès confirmés (létalité {{ N.letalite }}), {{ N.gueris }} guéris et {{ N.isolement }} patients en isolement, dans {{ N.zs }} zones de santé sur {{ N.zs_total }} et {{ N.provinces }} provinces : Ituri, Nord-Kivu, Haut-Uélé, Tshopo, Sud-Kivu, Bas-Uélé et Sud-Ubangi.</p>
+
+<h2 data-toc="7">2.2 Le mandat de CGPP<span class="ancre">⟦H7⟧</span></h2>
+<p>CGPP intervient là où il a un avantage comparatif : la surveillance à base communautaire et événementielle (SBC/SBE), le suivi des contacts sur 21 jours, la vérification des alertes et leur lien avec les équipes d'intervention rapide (EIR), la communication sur les risques et l'engagement communautaire (CREC), la surveillance liée aux funérailles, les points d'entrée informels et la circulation de l'information transfrontalière. CGPP ne prend pas en charge les soins cliniques, le laboratoire, la vaccination ni les grandes unités de traitement, qu'il relie aux piliers gouvernementaux par la référence, l'alerte et la coordination.</p>
+
+<h2 data-toc="8">2.3 Le cadre contractuel : plan DOS et Tranche 5<span class="ancre">⟦H8⟧</span></h2>
+<p>Deux documents fixent ce que CGPP doit faire et mesurer, avec des structures différentes :</p>
+<div class="deux-col">
+<div>
+<h3>Plan de travail DOS (version du 16 septembre)</h3>
+<p class="petit">Accord AID-0AA-A-17-00026, du 1<sup>er</sup> juin 2026 au 31 mai 2027, 4&#8239;000&#8239;000&nbsp;$ (coûts directs 3&#8239;478&#8239;261&nbsp;$ et 15&nbsp;% de coûts indirects). Chef de file : World Vision US ; partenaires : World Vision RDC, IMC, ADRA, IRC.</p>
+<table class="t-compact"><thead><tr><th>Pilier</th><th class="n">Total affiché</th><th class="n">Somme des lignes</th></tr></thead><tbody>
+{% for b in budget_dos %}<tr><td>{{ b.pilier }}</td><td class="n">{{ b.affiche }}</td><td class="n {% if b.ecart != '0' %}maj{% endif %}">{{ b.lignes }}</td></tr>{% endfor %}
+<tr class="total"><td>Total</td><td class="n">{{ budget_tot.affiche }}</td><td class="n">{{ budget_tot.lignes }}</td></tr>
+</tbody></table>
+</div>
+<div>
+<h3>Tranche 5 (activités et cibles pour les plans des IP)</h3>
+<p class="petit">Cinq piliers différents, 2&#8239;800&#8239;000&nbsp;$, mêmes partenaires (dont IRC) sous la coordination de CGPP. Pas de pilier coordination ni logistique ; la numérotation des piliers ne correspond pas à celle du plan DOS.</p>
+<table class="t-compact"><thead><tr><th>Pilier</th><th class="n">Budget</th><th class="n">Part</th></tr></thead><tbody>
+{% for b in budget_t5 %}<tr><td>{{ b.pilier }}</td><td class="n">{{ b.montant }}</td><td class="n">{{ b.part }}</td></tr>{% endfor %}
+<tr class="total"><td>Total</td><td class="n">2&#8239;800&#8239;000&nbsp;$</td><td class="n">100&nbsp;%</td></tr>
+</tbody></table>
+</div>
+</div>
+<p>Les lignes d'activité du plan DOS totalisent {{ budget_tot.lignes }} alors que les totaux de piliers affichés font {{ budget_tot.affiche }} et le budget par catégorie 4&#8239;000&#8239;000&nbsp;$ : les piliers 4 et 5 affichent chacun 20&#8239;000&nbsp;$ de plus que la somme de leurs lignes (section 5). Cette réconciliation est un préalable à toute analyse coût par extrant.</p>
+
+<h2 data-toc="9">2.4 Le dispositif de terrain et les flux d'information<span class="ancre">⟦H9⟧</span></h2>
+<p>Le classeur hebdomadaire couvre 12 zones de santé réparties entre trois partenaires : World Vision (Goma, Karisimbi, Rwanguba, Kalunguta et Mutwanga au Nord-Kivu ; Uvira, Nundu et Nyangezi au Sud-Kivu), ADRA (Rwampara et Lita en Ituri) et IMC (Beni et Katwa au Nord-Kivu). IRC, partenaire dans les deux plans, n'y figure pas. Les relais communautaires (RECO) et agents de santé communautaire (ACSA) remplissent chaque jour une fiche synthèse SBC par aire de santé, transmise par ODK ; les partenaires reportent chaque vendredi des agrégats hebdomadaires par ZS ; le secrétariat CGPP compile le lundi une mise à jour pour le bailleur. En parallèle, le coordonnateur MVE de CGPP pour l'Est participe aux réunions de coordination nationale (EOC Bunia) et provinciale (DPS Ituri) et en rédige les comptes rendus.</p>
+
+<h2 data-toc="10">2.5 Le travail réalisé pour ce rapport<span class="ancre">⟦H10⟧</span></h2>
+<ol>
+  <li>Lecture intégrale des douze documents (dont les deux Weekly Updates CGPP reçus ensuite), y compris les encadrés, graphiques et photos des SitReps et des comptes rendus.</li>
+  <li>Extraction automatique des SitReps nationaux (.doc) vers une base Excel normalisée : 7 provinces, {{ zs_par_sitrep }} ZS par numéro (plus la ligne des décès « à ventiler » de l'Ituri), alertes, contacts, laboratoire, PoE/PoC, prise en charge et {{ n_paragraphes }} paragraphes de texte.</li>
+  <li>Restructuration du classeur hebdomadaire des IP en format long et construction de la matrice maîtresse des indicateurs.</li>
+  <li>Extraction des Weekly Updates : série nationale (SitReps n° 135 et 138), tableau opérationnel consolidé des IP rattaché aux indicateurs de la matrice, activités codées, autres épidémies.</li>
+  <li>Écriture et exécution de {{ qc.n }} contrôles de qualité, dont un vérificateur qui recalcule chaque pourcentage écrit dans le texte.</li>
+  <li>Analyses épidémiologiques et programmatiques, graphiques, puis génération d'un SitRep CGPP de démonstration au 10 octobre.</li>
+</ol>
+
+<!-- =================================================================== 3 -->
+<h1 data-toc="11">3. Les sources de données<span class="ancre">⟦H11⟧</span></h1>
+<p>Douze documents ont été remis : dix au départ, puis les deux Weekly Updates CGPP. Le tableau en résume le rôle et l'état ; l'annexe A détaille les anomalies relevées dans chacun.</p>
+<table>
+<thead><tr><th style="width:21%">Document</th><th style="width:15%">Producteur, fréquence</th><th style="width:34%">Contenu utile</th><th style="width:30%">État et limites</th></tr></thead>
+<tbody>
+<tr><td>SitReps nationaux n° 146 (07/10) et 149 (10/10)</td><td>INSP, SGI MVE-17 ; quotidien</td><td>Cas, décès et létalité par province et par ZS ; alertes ; contacts ; laboratoire ; PoE/PoC ; prise en charge ; CREC, SMSPS, PSEA ; courbe et carte</td><td>Chiffres clés dans des encadrés ; Ituri et Sud-Ubangi non rapportés le 10/10 ; 19 anomalies (taux d'occupation, guéris, carte datée de la veille, 493 décès non ventilés)</td></tr>
+<tr><td>Comptes rendus de coordination nationale (05/10) et Ituri (06/10)</td><td>Coordonnateur CGPP Est ; par réunion</td><td>Situation par province, défis, recommandations, listes de présence photographiées</td><td>Pas de points d'action CGPP ni de responsables ; chiffres non raccordés aux SitReps ; liste Ituri incomplète ; données personnelles</td></tr>
+<tr><td>Cadre global d'indicateurs (CSV)</td><td>CGPP, multi-pays</td><td>25 indicateurs : définitions, numérateur, dénominateur, source, fréquence</td><td>Version antérieure au classeur ; indicateur IDSR sans définition</td></tr>
+<tr><td>Classeur Final_Global_Ebola_Indicators_CGPP</td><td>Secrétariat CGPP ; saisie hebdomadaire par IP</td><td>Guide ; une feuille par IP (semaine x ZS) ; compilation ; définitions</td><td>{{ completude }} de complétude ; pourcentages additionnés ; aucune cible ; IRC absent</td></tr>
+<tr><td>Matrice de Dr Barclay</td><td>Mise à jour des indicateurs du plan DOS</td><td>83 indicateurs en 6 piliers avec cibles et responsables</td><td>Identifiants dupliqués (1.10 lu 1.1) ; cibles hétérogènes ; réalisations vides</td></tr>
+<tr><td>Plan de travail DOS (copie propre du 16/09)</td><td>CGPP, approuvé par le DOS</td><td>Activités, cibles et budgets par pilier ; ciblage géographique ; risques ; MEL</td><td>Budgets non réconciliés ; cibles calibrées sur 16 semaines pour une période de 12 mois</td></tr>
+<tr><td>Tranche 5 (activités et cibles par pilier)</td><td>CGPP, pour les plans des IP</td><td>Cinq piliers, cibles, budget, MEAL</td><td>Cibles 2,5 à 23 fois supérieures à celles du DOS</td></tr>
+<tr><td>Weekly Updates CGPP (28/09 et 30/09)</td><td>Secrétariat CGPP, au bailleur ; hebdomadaire, en anglais</td><td>Tableau national (SitReps n° 135 et 138) ; tableau opérationnel consolidé des IP (28 au 30/09) ; activités ; contraintes ; autres épidémies</td><td>Totaux faux (sensibilisation, participation des RECO) ; IMC et IRC absents ; section « autres épidémies » recopiée ; données de {{ wu.retard }} jours au moment du SitRep</td></tr>
+<tr><td>Fiche synthèse journalière SBC (WV, ADRA, IMC)</td><td>RECO et ACSA, par aire de santé ; quotidien</td><td>23 types de sites ; alertes ; références ; personnes sensibilisées ; contacts ; décès communautaires ; réticences</td><td>Canevas papier vide ; champs manquants pour 5 indicateurs ; fenêtres de temps différentes des définitions</td></tr>
+</tbody></table>
+<div class="encadre"><p><strong>Constat d'ensemble.</strong> Les documents ne partagent ni identifiants d'indicateurs, ni codes de zones, ni calendrier : chaque rapport se refait à la main à partir de sources qui se contredisent. La priorité n'est pas d'ajouter des données mais de faire passer celles qui existent par une base unique, contrôlée, d'où sortent tous les produits.</p></div>
+
+<!-- =================================================================== 4 -->
+<h1 data-toc="12">4. Situation épidémiologique et analyses<span class="ancre">⟦H12⟧</span></h1>
+<p class="chapo">Analyses produites par le script <code>s04_analyses.py</code> à partir des SitReps n° {{ N.sitrep_prec }} et {{ N.sitrep }}, des SitReps n° 135 et 138 cités par les Weekly Updates CGPP et du SitRep n° 085 du 7 août cité par le plan DOS : cinq points de la série nationale. La série complète des SitReps reste demandée.</p>
+
+<h2 data-toc="13">4.1 Une épidémie qui a doublé en deux mois<span class="ancre">⟦H13⟧</span></h2>
+<table>
+<thead><tr><th>Indicateur national</th><th class="n">7 août (SitRep 085)</th><th class="n">7 octobre (SitRep {{ N.sitrep_prec }})</th><th class="n">10 octobre (SitRep {{ N.sitrep }})</th></tr></thead>
+<tbody>
+<tr><td>Cas confirmés cumulés</td><td class="n">{{ N.cas_085 }}</td><td class="n">{{ N.cas_prec }}</td><td class="n">{{ N.cas }}</td></tr>
+<tr><td>Décès confirmés cumulés</td><td class="n">{{ N.deces_085 }}</td><td class="n">4&#8239;242</td><td class="n">{{ N.deces }}</td></tr>
+<tr><td>Zones de santé touchées</td><td class="n">{{ N.zs_085 }} / 140</td><td class="n">64 / 167</td><td class="n">{{ N.zs }} / {{ N.zs_total }}</td></tr>
+<tr><td>Nouveaux cas par jour (moyenne de la période)</td><td class="n">-</td><td class="n">{{ N.moyenne_jour_085 }} depuis le 7 août</td><td class="n">{{ N.moyenne_jour }} sur 3 jours</td></tr>
+<tr><td>Contacts attendus ou en cours de suivi</td><td class="n">{{ N.contacts_085 }}</td><td class="n">{{ tot_contacts_146 }}</td><td class="n">ND (Ituri non rapportée)</td></tr>
+<tr><td>Contacts vus dans les 24 h</td><td class="n">{{ N.taux_contacts_085 }}</td><td class="n">80,0&nbsp;%</td><td class="n">81,0&nbsp;% (4 provinces)</td></tr>
+<tr><td>Alertes validées comme cas suspects</td><td class="n">{{ N.validation_085 }}</td><td class="n">{{ val146 }}</td><td class="n">18,1&nbsp;% (sans Ituri)</td></tr>
+<tr><td>Cas suspects investigués</td><td class="n">{{ N.investigation_085 }}</td><td class="n">100,0&nbsp;%</td><td class="n">100,0&nbsp;%</td></tr>
+</tbody></table>
+<p>Entre le 7 août et le 10 octobre, le cumul est passé de {{ N.cas_085 }} à {{ N.cas }} cas (x {{ N.facteur_085 }}), soit {{ N.moyenne_jour_085 }} cas par jour en moyenne ; le rythme des trois derniers jours ({{ N.moyenne_jour }} par jour) reste du même ordre. La courbe par date de début des symptômes du SitRep n° {{ N.sitrep }} montre un plateau élevé d'août à mi-septembre (50 à 90 cas par jour) puis une légère baisse, à interpréter avec prudence car 20&nbsp;% des cas n'ont pas de date de début renseignée. La charge de suivi des contacts a presque doublé alors que la proportion vue chaque jour a légèrement baissé ; la validation des alertes est tombée de 34&nbsp;% à 16&nbsp;%, ce qui signale un afflux d'alertes peu spécifiques à surveiller dans les ZS CGPP.</p>
+
+<figure class="svgfig">{{ svg.rythme }}<figcaption>Figure 1. Nouveaux cas confirmés par jour, en moyenne sur chaque intervalle entre deux SitReps (n° 085 cité par le plan DOS ; n° 135 et 138 cités par les Weekly Updates).</figcaption></figure>
+<p>La série montre un rythme national de {{ Q.min }} à {{ Q.max }} cas par jour depuis le {{ Q.debut }}, un peu inférieur à la moyenne du 7 août au 26 septembre ({{ Q.long }} par jour) mais sans baisse continue. La composition change : le Nord-Kivu fournit {{ Q.part_nk }} des nouveaux cas depuis le {{ Q.debut }}, contre {{ Q.part_nk_long }} auparavant, et son rythme a presque doublé fin septembre ({{ Q.nk_min }} puis {{ Q.nk_max }} cas par jour).</p>
+
+<h2 data-toc="14">4.2 Un glissement vers le Nord-Kivu<span class="ancre">⟦H14⟧</span></h2>
+<table>
+<thead><tr><th>Province</th><th class="n">7 août</th><th class="n">7 oct.</th><th class="n">10 oct.</th><th class="n">Hausse 3 j</th><th class="n">Part 7 août</th><th class="n">Part 10 oct.</th><th class="n">Croissance</th><th class="n">Létalité</th><th class="n">ZS touchées</th></tr></thead>
+<tbody>{% for r in prov_rows %}<tr><td>{{ r.province }}</td><td class="n">{{ r.cas_085 }}</td><td class="n">{{ r.cas_prec }}</td><td class="n">{{ r.cas }}</td><td class="n">{{ r.hausse }}</td><td class="n">{{ r.part_085 }}</td><td class="n">{{ r.part }}</td><td class="n">{{ r.facteur }}</td><td class="n">{{ r.letalite }}</td><td class="n">{{ r.zs }}</td></tr>{% endfor %}</tbody>
+</table>
+<p>L'Ituri reste l'épicentre ({{ part_it }} des cas) mais son poids recule ({{ part_it_085 }} le 7 août). Le Nord-Kivu a quadruplé et présente la létalité la plus élevée (57,1&nbsp;%, 67&nbsp;% à Beni), ce qui va avec une détection tardive et des décès communautaires nombreux. Deux nouvelles provinces (Bas-Uélé, Sud-Ubangi) et 12 nouvelles ZS sont touchées depuis le 7 août. Pour CGPP, cela plaide pour renforcer la SBC et le suivi des contacts au Nord-Kivu, où IMC (Beni, Katwa) et World Vision (Kalunguta, Mutwanga) sont déjà présents.</p>
+
+<h2 data-toc="15">4.3 Les foyers en accélération et la couverture CGPP<span class="ancre">⟦H15⟧</span></h2>
+<figure class="svgfig">{{ svg.hausse }}<figcaption>Figure 2. Hausse des cas confirmés cumulés par ZS entre les SitReps n° {{ N.sitrep_prec }} et {{ N.sitrep }} (15 premières) ; en bleu, les ZS du classeur CGPP, avec le partenaire entre crochets.</figcaption></figure>
+<p>{{ V.zs_en_hausse }} ZS ont enregistré au moins un nouveau cas en trois jours ; {{ V.zs_en_hausse_cgpp }} d'entre elles sont suivies dans le classeur CGPP et totalisent {{ V.cas_hausse_cgpp }} des {{ V.cas_hausse_total }} nouveaux cas ({{ C.part_hausse }}). Les foyers actifs hors dispositif (hausse d'au moins 5 cas et d'au moins 15&nbsp;% ou de 10 cas) sont <strong>{{ V.foyers_hors_cgpp }}</strong>. Mandima concentre à elle seule 31 nouveaux cas : les comptes rendus de coordination y signalent 8 contacts devenus cas le 4 octobre, une attaque du PoC de Mambasa, des poches de résistance et des malades qui quittent le CTE faute de repas. Plusieurs de ces ZS (Bunia, Nizi, Mambasa, Mangala, Nia-Nia) figurent pourtant dans le ciblage de niveau 1 du plan DOS : l'écart entre zones prévues et zones réellement suivies dans le classeur doit être expliqué (couverture par IRC ou par d'autres canaux, ou absence de rapportage).</p>
+
+<h2 data-toc="16">4.4 Les zones de santé du dispositif CGPP<span class="ancre">⟦H16⟧</span></h2>
+<div class="deux-col garder">
+<div>
+<table class="t-compact"><thead><tr><th>ZS</th><th>IP</th><th class="n">Cas</th><th class="n">Hausse 3 j</th><th class="n">Décès</th><th class="n">Létalité</th></tr></thead>
+<tbody>{% for z in zs_cgpp %}<tr><td>{{ z.zone }} <span class="petit">({{ z.province }})</span></td><td>{{ z.ip }}</td><td class="n">{{ z.cas }}</td><td class="n">{{ z.hausse }}</td><td class="n">{{ z.deces }}</td><td class="n">{{ z.letalite }}</td></tr>{% endfor %}
+<tr class="total"><td>Total</td><td></td><td class="n">{{ C.cas }}</td><td class="n">+{{ C.hausse }}</td><td class="n">{{ C.deces }}</td><td class="n">{{ C.letalite }}</td></tr></tbody></table>
+</div>
+<div>
+<p>Les 12 ZS du classeur cumulent {{ C.cas }} cas et {{ C.deces }} décès, soit {{ C.part }} du total national, et {{ C.part_hausse }} de la hausse récente. Sept sont touchées ; cinq n'ont aucun cas ({{ C.zs_sans_cas }}) et relèvent de la préparation. Les ZS d'ADRA (Rwampara, Lita) et d'IMC (Beni, Katwa) portent l'essentiel de la charge : Beni est la ZS CGPP la plus active (+22 cas) avec une létalité de 67&nbsp;%. Le 10 octobre, 6 des 13 nouveaux cas des ZS CGPP ont été confirmés après le décès (46&nbsp;%), contre 20&nbsp;% au niveau national : la SBC n'y détecte pas encore les cas assez tôt.</p>
+<p class="petit">L'indicateur SURV-17 « cas confirmés dans les zones CGPP » doit être calculé ainsi à partir du SitRep : le classeur des IP n'en déclare qu'un seul.</p>
+</div>
+</div>
+
+<h2 data-toc="17">4.5 Une détection encore tardive<span class="ancre">⟦H17⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th>SitRep</th><th>Province</th><th class="n">Nouveaux cas</th><th class="n">Confirmés après décès (communauté)</th><th class="n">Décès en CTE</th><th class="n">Part des nouveaux cas détectés après décès</th><th class="n">Part communautaire des décès du jour</th></tr></thead>
+<tbody>{% for r in dc_rows %}<tr {% if r.province == "Total" %}class="total"{% endif %}><td>{{ r.sitrep }}</td><td>{{ r.province }}</td><td class="n">{{ r.nouveaux }}</td><td class="n">{{ r.comm }}</td><td class="n">{{ r.cte }}</td><td class="n">{{ r.part }}</td><td class="n">{{ r.part_deces }}</td></tr>{% endfor %}</tbody>
+</table>
+<p>Un cas confirmé sur cinq à deux sur cinq est découvert après le décès, à domicile ou dans la communauté ; ces décès représentent {{ comm146 }} puis {{ comm149 }} des décès confirmés du jour. Chaque décès communautaire non détecté est aussi un risque de transmission lors des soins et des funérailles. Cet indicateur (SURV-22), calculable dès maintenant, est le meilleur indicateur d'impact de la SBC et doit figurer dans chaque SitRep CGPP.</p>
+
+<h2 data-toc="18">4.6 Contacts, alertes, laboratoire et prise en charge<span class="ancre">⟦H18⟧</span></h2>
+<figure class="svgfig reduit">{{ svg.contacts }}<figcaption>Figure 3. Contacts vus dans les 24 h par province, les 7 et 10 octobre, comparés au seuil national (95&nbsp;%) et à la cible CGPP (90&nbsp;%).</figcaption></figure>
+<div class="deux-col">
+<div>
+<table class="t-compact"><thead><tr><th>Province</th><th class="n">Contacts 07/10</th><th class="n">Vus / suivis</th><th class="n">Contacts 10/10</th></tr></thead>
+<tbody>{% for r in ct_rows %}<tr><td>{{ r.province }}</td><td class="n">{{ r.t146 }}</td><td class="n">{{ r.n146 }}</td><td class="n">{{ r.t149 }}</td></tr>{% endfor %}</tbody></table>
+<table class="t-compact"><thead><tr><th>Province</th><th class="n">Positivité 07/10</th><th class="n">Positivité 10/10</th></tr></thead>
+<tbody>{% for r in lab_rows %}<tr><td>{{ r.province }}</td><td class="n">{{ r.a }}</td><td class="n">{{ r.b }}</td></tr>{% endfor %}</tbody></table>
+</div>
+<div>
+<table class="t-compact"><thead><tr><th>Province</th><th class="n">Alertes 07/10</th><th class="n">Validées</th><th class="n">Alertes 10/10</th><th class="n">Validées</th></tr></thead>
+<tbody>{% for r in al_rows %}<tr><td>{{ r.province }}</td><td class="n">{{ r.a.total }}</td><td class="n">{{ r.a.val }}</td><td class="n">{{ r.b.total }}</td><td class="n">{{ r.b.val }}</td></tr>{% endfor %}</tbody></table>
+<p class="petit">Le Nord-Kivu reste en retrait sur le suivi des contacts (76 à 79&nbsp;%) avec la charge la plus lourde (plus de 15&nbsp;000 contacts). La positivité de 53,8&nbsp;% au Haut-Uélé le 10/10 (7 sur 13) signale un nombre de prélèvements trop faible pour la transmission observée à Wamba. Au Nord-Kivu, les lits des CTE/CT sont occupés à 94,9&nbsp;% et 31&nbsp;% des patients sont pris en charge hors CTE/CT ; en Ituri, l'absence de repas au CT de Mandima fait fuir les malades.</p>
+</div>
+</div>
+
+<h2 data-toc="19">4.7 Le programme CGPP : réalisations et complétude<span class="ancre">⟦H19⟧</span></h2>
+<p>Seuls trois indicateurs sur 27 sont renseignés dans le classeur, tous par World Vision. Selon la cible retenue, l'appréciation change du tout au tout :</p>
+<table>
+<thead><tr><th style="width:34%">Indicateur</th><th class="n">Réalisé</th><th class="n">Cible DOS</th><th style="width:16%">% de la cible DOS</th><th class="n">Cible Tranche 5</th><th style="width:16%">% de la cible T5</th></tr></thead>
+<tbody>{% for r in realis %}<tr><td>{{ r.id }} {{ r.libelle }}</td><td class="n">{{ r.realise }}</td><td class="n">{{ r.cible_dos }}</td><td>{{ r.pct_dos }}<div class="meter"><span style="width:{{ r.w_dos }}%"></span></div></td><td class="n">{{ r.cible_t5 }}</td><td>{{ r.pct_t5 }}<div class="meter"><span style="width:{{ r.w_t5 }}%"></span></div></td></tr>{% endfor %}</tbody>
+</table>
+<h3>Complétude de la saisie hebdomadaire (cellule renseignée si au moins un indicateur a une valeur)</h3>
+<table class="grille">
+<thead><tr><th>IP</th><th>Zone de santé</th>{% for s in semaines %}<th class="c">S{{ s }}</th>{% endfor %}</tr></thead>
+<tbody>{% for g in grille %}<tr><td class="z">{{ g.ip }}</td><td class="z">{{ g.zone }}</td>{% for c in g.cases %}<td class="{{ 'g-oui' if c else 'g-non' }}">{{ 'oui' if c else 'non' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table>
+<p>{{ cellules }} cellules sont renseignées ({{ completude }}). Les alertes déclarées par World Vision viennent presque toutes de Rwanguba (33 en S36, 41 en S37) ; Kalunguta et Mutwanga, les deux ZS touchées de World Vision, n'ont aucune donnée. Sans les saisies manquantes (semaines 36 à 41 pour ADRA et IMC, 38 à 41 pour World Vision), aucun indicateur de performance ne peut être calculé pour le rapport au DOS.</p>
+
+<h2 data-toc="20">4.8 Limites<span class="ancre">⟦H20⟧</span></h2>
+<ul>
+<li>Cinq points de série seulement, dont trois connus indirectement (plan DOS, Weekly Updates) : les hausses sur trois jours sont sensibles aux reclassements et aux retards de saisie ; la série 001 à 149 permettrait des moyennes mobiles sur 7 jours. Sans la liste linéaire des cas (DHIS2 Tracker), les indicateurs les plus utiles (part des nouveaux cas issus des listes de contacts, délais) restent incalculables.</li>
+<li>Les chiffres du 7 août sont ceux repris dans le plan DOS (SitRep n° 085), non vérifiés sur le document source ; les létalités par ZS de l'Ituri sont sous-estimées tant que 493 décès restent « à ventiler ».</li>
+</ul>
+
+<!-- =================================================================== 5 -->
+<h1 data-toc="21">5. Contrôle qualité des données<span class="ancre">⟦H21⟧</span></h1>
+<p class="chapo">Le contrôle est automatisé dans <code>s03_controle_qualite.py</code> et s'exécute à chaque passage de la chaîne. Il produit un classeur (<code>{{ qc.fichier }}</code>) et alimente la feuille <code>qc_suivi</code> de la base, où chaque anomalie reçoit un responsable et un statut.</p>
+
+<h2 data-toc="22">5.1 Méthode<span class="ancre">⟦H22⟧</span></h2>
+<p>Les règles couvrent six dimensions : exhaustivité (provinces ou partenaires manquants, cellules vides), cohérence interne (sommes, recalcul de chaque pourcentage à partir de son numérateur et de son dénominateur), cohérence temporelle (un cumul ne baisse pas ; la hausse couvre au moins les nouveaux cas du jour), cohérence externe (réunions contre SitReps, classeur contre SitRep, plan DOS contre Tranche 5), conformité au cadre (identifiants, définitions, fenêtres de temps) et plausibilité (coûts unitaires, pourcentages au-dessus de 100&nbsp;%). Un vérificateur générique repère dans tout texte les tournures « 84,2&nbsp;% (169/209) », « 123 feedbacks sur 151 (81,5&nbsp;%) » ou « 207/436 AS soit 46&nbsp;% » et recalcule le pourcentage : 108 pourcentages ont été vérifiés dans les deux SitReps. Quelques points non calculables (date imprimée sur la carte, complétude de la courbe lue sur la figure, liste de présence incomplète) sont saisis comme observations manuelles dans <code>data/ref/observations_manuelles.csv</code>.</p>
+<div class="compteur">
+  <div><span class="v">{{ qc.n }}</span><span class="l">contrôles</span></div>
+  <div><span class="v">{{ qc.ok }}</span><span class="l">conformes</span></div>
+  <div class="crit"><span class="v">{{ qc.crit }}</span><span class="l">critiques</span></div>
+  <div class="maj"><span class="v">{{ qc.maj }}</span><span class="l">majeures</span></div>
+  <div class="min"><span class="v">{{ qc.mineures }}</span><span class="l">mineures</span></div>
+</div>
+<table class="t-compact">
+<thead><tr><th>Famille de sources</th><th class="n">Contrôles</th><th class="n">Conformes</th><th class="n">Critiques</th><th class="n">Majeures</th><th class="n">Mineures</th></tr></thead>
+<tbody>{% for r in familles %}<tr><td>{{ r.famille }}</td><td class="n">{{ r.n }}</td><td class="n">{{ r.ok }}</td><td class="n {% if r.crit %}crit{% endif %}">{{ r.crit }}</td><td class="n {% if r.maj %}maj{% endif %}">{{ r.maj }}</td><td class="n">{{ r.mineures }}</td></tr>{% endfor %}</tbody>
+</table>
+<p class="petit">Gravité : critique = fausse une décision ou un rapport au bailleur ; majeure = chiffre publié faux ou non comparable ; mineure = forme, arrondi, document de travail.</p>
+
+<h2 data-toc="23">5.2 Les anomalies critiques<span class="ancre">⟦H23⟧</span></h2>
+<table>
+<thead><tr><th style="width:8%">Règle</th><th style="width:24%">Source et objet</th><th style="width:30%">Observé</th><th style="width:38%">Action</th></tr></thead>
+<tbody>{% for a in crit %}<tr class="crit"><td class="nw">{{ a.id }}</td><td>{{ a.source }} : {{ a.objet }}</td><td>{{ a.observe }}</td><td>{{ a.reco }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2 data-toc="24">5.3 Les erreurs relevées dans les SitReps nationaux<span class="ancre">⟦H24⟧</span></h2>
+<p>Elles sont à transmettre à l'équipe de rédaction du SitRep (INSP) sous forme de liste d'errata ; aucune ne remet en cause les cumuls nationaux, dont les sommes par ZS et par province ont toutes été vérifiées.</p>
+<table class="t-compact">
+<thead><tr><th style="width:10%">SitRep</th><th style="width:40%">Élément</th><th style="width:22%">Publié</th><th style="width:28%">Valeur cohérente</th></tr></thead>
+<tbody>
+<tr><td>146</td><td>Nord-Kivu : occupation des lits confirmés (169/209)</td><td>84,2&nbsp;%</td><td>80,9&nbsp;%</td></tr>
+<tr><td>146</td><td>Nord-Kivu : occupation des lits suspects (146/165)</td><td>84,2&nbsp;%</td><td>88,5&nbsp;% (valeur citée dans les défis)</td></tr>
+<tr><td>146</td><td>Haut-Uélé : taux d'occupation (54/153)</td><td>55,1&nbsp;%</td><td>35,3&nbsp;%</td></tr>
+<tr><td>146</td><td>Tshopo : taux d'occupation (10/36) ; « 15 patients (6 confirmés et 4 suspects) »</td><td>48,4&nbsp;% ; 15</td><td>27,8&nbsp;% ; 10 patients</td></tr>
+<tr><td>146</td><td>Patients en isolement (encadré)</td><td>978</td><td>980 (somme des provinces)</td></tr>
+<tr><td>149</td><td>Alertes vérifiées (texte) ; alertes validées</td><td>97,6&nbsp;% ; 18,5&nbsp;%</td><td>100&nbsp;% (tableau 3) ; 18,1&nbsp;% (310/1&#8239;713)</td></tr>
+<tr><td>149</td><td>Ituri : occupation des lits « 35,5&nbsp;% (360/1&#8239;015) » avec 336 patients</td><td>35,5&nbsp;%</td><td>33,1&nbsp;% (chiffre repris du SitRep 146)</td></tr>
+<tr><td>149</td><td>Guéris du jour (résumé)</td><td>18</td><td>23 avec les 5 guérisons du Nord-Kivu</td></tr>
+<tr><td>149</td><td>Taux de suivi des contacts et total des alertes</td><td>81,0&nbsp;% ; 1&#8239;713</td><td>Sans Ituri ni Sud-Ubangi : à signaler, non comparable au 07/10</td></tr>
+<tr><td>149</td><td>Carte (figure 2) ; aires de santé touchées</td><td>09/10 ; 246</td><td>10/10 ; au moins 247 (nouvelle ZS Dakwa)</td></tr>
+<tr><td>146, 149</td><td>Décès « à ventiler » en Ituri</td><td>493 (16&nbsp;%)</td><td>À ventiler par ZS</td></tr>
+<tr><td>146, 149</td><td>Courbe épidémique</td><td>6&#8239;823 et 7&#8239;136 cas</td><td>77,6&nbsp;% et 79,5&nbsp;% des cas : afficher la complétude</td></tr>
+</tbody></table>
+
+<h2 data-toc="25">5.4 Réunions, classeur, matrices, plans et Weekly Updates<span class="ancre">⟦H25⟧</span></h2>
+<ul>
+<li><strong>Comptes rendus</strong> : « 201/125 décès soit 62&nbsp;% » est inversé (125 décès sur 201 cas, 62,2&nbsp;%) ; « 207/436 AS soit 46&nbsp;% » vaut 47,5&nbsp;% ; le cumul de l'Ituri du 4/10 (6&nbsp;292) est incompatible avec celui du 5/10 (6&nbsp;422 avec 30 nouveaux cas), puis il faudrait 91 cas le 6/10 pour atteindre les 6&nbsp;542 du SitRep du 7/10 ; les dénominateurs de ZS diffèrent du SitRep (Bas-Uélé 3/13 contre 3/11 ; Haut-Uélé 6/13 contre 7/13) ; aucun point d'action n'a de responsable ni d'échéance.</li>
+<li><strong>Classeur hebdomadaire</strong> : complétude de {{ completude }} ; 5 indicateurs en pourcentage additionnés par les formules de compilation ; aucune cible (division par zéro sur 27 lignes) ; IRC absent ; la période S20 à S35 n'est pas ventilée ; « cas confirmés dans les ZS CGPP » déclaré à 1 contre {{ C.cas }} selon le SitRep.</li>
+<li><strong>Cadre global et matrice de Dr Barclay</strong> : l'indicateur IDSR porte la définition des visites de supervision (CSV) ou est remplacé par un doublon (Excel) ; six identifiants en double dans la matrice (1.10 enregistré comme 1.1, etc.) ; 7 cibles écrites en texte et 11 codées « 1 » pour 100&nbsp;% ; LOG-14 et MEL-14 identiques ; le résumé annonce 80 indicateurs pour 83.</li>
+<li><strong>Plan DOS</strong> : piliers 4 et 5 surévalués de 20&#8239;000&nbsp;$ chacun par rapport à leurs lignes ; détails des activités 2.1 (265&#8239;000&nbsp;$ pour 275&#8239;000&nbsp;$) et 2.2 (138&#8239;000&nbsp;$ pour 135&#8239;000&nbsp;$) ; coût unitaire mal saisi en 2.3 (« 25 supervision visits X $25,000 ») ; 16 ou 18 mises à jour hebdomadaires selon la section.</li>
+<li><strong>Weekly Updates</strong> : total des personnes sensibilisées calculé sans la colonne ADRA (396&#8239;261 au lieu de 400&#8239;992) ; taux de participation des RECO de 93,6&nbsp;% au lieu de 95,5&nbsp;% ; total des nouveaux cas du SitRep 138 à 53 pour une somme de 54 ; « 0,070 » guéris ; DPS du Nord-Kivu notée DPS-SK ; taux de résolution des réticences de la zone ADRA à 39,2&nbsp;% dans le texte et 60,3&nbsp;% dans le tableau ; contacts « vus » rapportés à un cumul ; section « autres épidémies » identique dans les deux rapports ; IMC et IRC absents.</li>
+<li><strong>Fiche SBC</strong> : pas de champ pour la vérification des alertes en 24 h, les rumeurs traitées en 48 h, la fin du suivi à J21, les contacts symptomatiques référés et les décès notifiés ; investigation mesurée à 24 h contre 7 jours dans le cadre ; plusieurs comptages en texte libre dans une même cellule ; ancienne version anglaise masquée.</li>
+</ul>
+
+<!-- =================================================================== 6 -->
+<h1 data-toc="26">6. Cadre d'indicateurs : corrections et ajouts<span class="ancre">⟦H26⟧</span></h1>
+
+<h2 data-toc="27">6.1 Une matrice maîtresse unique<span class="ancre">⟦H27⟧</span></h2>
+<p>Quatre listes coexistaient : le cadre global (25 indicateurs), le classeur des IP (27 lignes), la matrice de Dr Barclay (83 indicateurs, structure du plan DOS) et les extrants de la Tranche 5 (environ 45). La matrice maîtresse les réunit en {{ mat_tot.total }} indicateurs. Chaque indicateur a un identifiant texte stable (<code>SURV-05</code> plutôt que <code>2.5</code>, qui devient <code>2.1</code> pour <code>2.10</code> dans Excel), un type, un numérateur et un dénominateur, une source et le champ de la fiche SBC qui l'alimente, les deux cibles (DOS et Tranche 5), un seuil d'alerte, et ses correspondances avec Dr Barclay et le cadre global. Elle est livrée dans la feuille <code>ref_indicateurs</code> de la base et en annexe B.</p>
+<table>
+<thead><tr><th>Pilier</th><th class="n">Existants</th><th class="n">À corriger</th><th class="n">Nouveaux</th><th class="n">Total</th></tr></thead>
+<tbody>{% for r in mat_rows %}<tr><td>{{ r.pilier }} <span class="petit">({{ r.code }})</span></td><td class="n">{{ r.existant }}</td><td class="n">{{ r.corriger }}</td><td class="n">{{ r.nouveau }}</td><td class="n">{{ r.total }}</td></tr>{% endfor %}
+<tr class="total"><td>Total</td><td class="n">{{ mat_tot.existant }}</td><td class="n">{{ mat_tot.corriger }}</td><td class="n">{{ mat_tot.nouveau }}</td><td class="n">{{ mat_tot.total }}</td></tr></tbody>
+</table>
+<p class="petit">Les 83 indicateurs de Dr Barclay sont conservés (60 tels quels, 23 à corriger). Les nouveaux comprennent 26 propositions et {{ n_t5_only }} indicateurs propres à la Tranche 5 (piliers PREP et DEPL, quelques extrants PCI et CREC), à activer si elle est retenue.</p>
+
+<h2 data-toc="28">6.2 Deux jeux de cibles à réconcilier<span class="ancre">⟦H28⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th>ID</th><th>Indicateur</th><th class="n">Cible DOS</th><th class="n">Cible Tranche 5</th><th class="n">Rapport</th></tr></thead>
+<tbody>{% for c in cibles %}<tr><td class="nw">{{ c.id }}</td><td>{{ c.libelle }}</td><td class="n">{{ c.dos }}</td><td class="n">{{ c.t5 }}</td><td class="n">{{ c.ratio }}</td></tr>{% endfor %}</tbody>
+</table>
+<div class="encadre decision"><p><strong>Recommandation.</strong> Les cibles DOS correspondent visiblement à une fenêtre de 16 semaines (16 réunions et mises à jour hebdomadaires, 4 rapports mensuels, revues à J30, J60 et J90) ; celles de la Tranche 5 à 12 mois et à un périmètre élargi (provinces en anneau, déplacés). Proposition : garder les cibles DOS comme référence contractuelle de la période en cours et les ramener à une base hebdomadaire pour suivre le rythme ; adopter les cibles Tranche 5 pour les plans des IP dès qu'elle est confirmée, en les ventilant par IP, province et trimestre. La matrice prévoit les deux colonnes ; le tableau de suivi calcule le pourcentage de réalisation sur la cible choisie.</p></div>
+
+<h2 data-toc="29">6.3 Indicateurs à corriger<span class="ancre">⟦H29⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th style="width:9%">ID</th><th style="width:33%">Indicateur</th><th style="width:58%">Correction</th></tr></thead>
+<tbody>{% for i in a_corriger %}<tr><td class="nw">{{ i.id }}</td><td>{{ i.libelle }}</td><td>{{ i.comm }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2 data-toc="30">6.4 Indicateurs à ajouter en priorité<span class="ancre">⟦H30⟧</span></h2>
+<p>Ces indicateurs mesurent ce que la riposte et le bailleur attendent de CGPP : détecter plus tôt, suivre les contacts jusqu'au bout, fermer la boucle avec la communauté et produire des données fiables. Plusieurs se calculent déjà avec les données disponibles ; les autres demandent un champ ajouté à la fiche SBC ou l'accès à la liste linéaire.</p>
+<table class="t-compact">
+<thead><tr><th style="width:8%">ID</th><th style="width:22%">Indicateur</th><th style="width:30%">Numérateur / dénominateur</th><th style="width:22%">Source, champ</th><th style="width:18%">Pourquoi</th></tr></thead>
+<tbody>{% for i in nouveaux_p1 %}<tr><td class="nw">{{ i.id }}</td><td><strong>{{ i.libelle }}</strong><br><span class="petit">{{ i.type }}, {{ i.freq | lower }}{% if i.seuil %} ; {{ i.seuil }}{% endif %}</span></td><td>{{ i.num }}{% if i.den and i.den != "N/A" %}<br><span class="petit">sur</span> {{ i.den }}{% endif %}</td><td>{{ i.source }}{% if i.champ %}<br><code>{{ i.champ }}</code>{% endif %}</td><td class="petit">{{ i.comm }}</td></tr>{% endfor %}</tbody>
+</table>
+<h3>Priorités 2 et 3 (dans le mois, puis le trimestre)</h3>
+<table class="t-compact">
+<thead><tr><th style="width:8%">ID</th><th style="width:30%">Indicateur</th><th style="width:44%">Numérateur / dénominateur</th><th style="width:18%">Source</th></tr></thead>
+<tbody>{% for i in nouveaux_p23 %}<tr><td class="nw">{{ i.id }}</td><td>{{ i.libelle }} <span class="petit">(P{{ i.prio }})</span></td><td>{{ i.num }}{% if i.den and i.den != "N/A" %} <span class="petit">sur</span> {{ i.den }}{% endif %}</td><td>{{ i.source }}</td></tr>{% endfor %}</tbody>
+</table>
+<p class="petit">Désagrégations à généraliser : sexe et âge (moins de 5 ans, 5 à 17 ans, adultes), ZS et aire de santé, partenaire, type de site (marché, site minier, PoE, site de déplacés). Les indicateurs de délai (SURV-23, SURV-24) utilisent la médiane et non la moyenne.</p>
+
+<h2 data-toc="31">6.5 Aligner la fiche SBC sur les définitions<span class="ancre">⟦H31⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th style="width:26%">Indicateur</th><th style="width:32%">Champ actuel de la fiche</th><th style="width:42%">Écart et correction</th></tr></thead>
+<tbody>
+<tr><td>SURV-05 Alertes détectées</td><td>Alertes MVE retrouvées (malades, décès)</td><td class="ok">Aligné</td></tr>
+<tr><td>SURV-07 Alertes notifiées en 24 h</td><td>Alertes signalées au CS dans les 24 h</td><td class="ok">Aligné (dénominateur : alertes retrouvées)</td></tr>
+<tr><td>SURV-06 Alertes vérifiées en 24 h</td><td>Aucun</td><td class="maj">Ajouter « alertes vérifiées par l'ESS/EIR en 24 h »</td></tr>
+<tr><td>SURV-08 Alertes investiguées</td><td>Investiguées dans les 24 h</td><td class="maj">Le cadre dit 7 jours : retenir 24 h partout (cohérent avec 7-1-7)</td></tr>
+<tr><td>SURV-01 / SURV-02 Contacts</td><td>Listés ce jour ; sous suivi ; vus ce jour</td><td class="ok">Aligné si agrégé en contacts-jours (vus / attendus)</td></tr>
+<tr><td>SURV-21 Fin du suivi à J21</td><td>Aucun</td><td class="maj">Ajouter « contacts ayant terminé 21 jours » et « perdus de vue »</td></tr>
+<tr><td>SURV-26 Contacts symptomatiques référés</td><td>Contacts avec au moins un signe</td><td class="maj">Ajouter « référés dans les 24 h »</td></tr>
+<tr><td>CREC-01 à CREC-04 Séances et personnes</td><td>Séances ou ménages ; personnes M/F ; type de site</td><td class="maj">Séparer ménages et séances ; une colonne numérique par technique ; fixer la liste des sites à haut risque</td></tr>
+<tr><td>CREC-05 / CREC-06 Rumeurs</td><td>Réticences enregistrées, levées le jour même ; feedbacks en texte</td><td class="maj">Ajouter rumeurs enregistrées et traitées en 48 h ; réticences levées en 48 h</td></tr>
+<tr><td>SURV-30 Décès communautaires prélevés</td><td>Décès communautaires swabés ; EDS</td><td class="maj">Ajouter « décès communautaires notifiés » (dénominateur)</td></tr>
+<tr><td>SURV-29 Complétude SBC</td><td>RECO et ACSA attendus ; ayant travaillé</td><td class="ok">Déjà présent : à saisir systématiquement</td></tr>
+</tbody></table>
+<p>Le canevas <code>sbc_activites</code> / <code>sbc_synthese_as</code> de la base traduit la fiche papier en deux tables (une ligne par site visité, une ligne par aire de santé et par jour) avec les champs nouveaux marqués « NOUVEAU » : c'est la structure cible du formulaire ODK.</p>
+
+<h2 data-toc="54">6.6 Le tableau opérationnel des Weekly Updates<span class="ancre">⟦H54⟧</span></h2>
+<p>Le tableau consolidé du Weekly Update du 30 septembre est la seule source opérationnelle récente. La chaîne le rattache aux indicateurs de la matrice (feuille <code>saisie_hebdo</code>, numérateur et dénominateur) ; plusieurs définitions restent à préciser avant d'en faire des indicateurs de performance.</p>
+<table class="t-compact">
+<thead><tr><th style="width:30%">Ligne du tableau</th><th style="width:16%">Indicateur</th><th style="width:54%">Écart de définition et correction</th></tr></thead>
+<tbody>
+<tr><td>Expected RECOs ; RECOs who worked</td><td class="nw">SURV-29</td><td>Complétude SBC : RECO actifs sur RECO attendus ; à compléter par les rapports reçus sur rapports attendus.</td></tr>
+<tr><td>People sensitized (CREC)</td><td class="nw">CREC-03</td><td class="maj">400&#8239;992 personnes en trois jours, soit 73&nbsp;% de la cible du plan : préciser s'il s'agit de personnes uniques ou de passages.</td></tr>
+<tr><td>Sick alerts detected ; reported</td><td class="nw">SURV-05, SURV-07</td><td class="maj">« Alertes malades » plus larges que les alertes de suspicion de MVE (1&#8239;708 en trois jours pour une cible de 1&#8239;500) ; préciser le délai de notification (24 h).</td></tr>
+<tr><td>Community deaths swabbed ; Safe and Dignified Burials</td><td class="nw">SURV-30, CREC-17</td><td>Dénominateurs absents (décès communautaires notifiés, décès éligibles à un EDS).</td></tr>
+<tr><td>Contacts under follow-up (cumulative) ; actually seen</td><td class="nw">SURV-01, SURV-02</td><td class="maj">Cumul rapporté à des contacts vus sans fenêtre de temps : rapporter les contacts attendus et vus du jour (contacts-jours).</td></tr>
+<tr><td>Resistances identified ; resolved</td><td class="nw">CREC-14</td><td>Préciser le délai (48 h) et ventiler par type de réticence.</td></tr>
+</tbody></table>
+
+<!-- =================================================================== 7 -->
+<h1 data-toc="32">7. Architecture de données proposée<span class="ancre">⟦H32⟧</span></h1>
+<p class="chapo">En tant que fonction SI, l'objectif est qu'un chiffre ne soit saisi qu'une fois, contrôlé une fois et réutilisé partout : SitRep, mise à jour DOS, rapports mensuels, tableau de bord.</p>
+
+<h2 data-toc="33">7.1 Principes<span class="ancre">⟦H33⟧</span></h2>
+<ol>
+<li><strong>Une seule source de vérité</strong> : la base normalisée ; les rapports en sont des vues, jamais des copies retouchées.</li>
+<li><strong>Format long</strong> : une ligne par observation (indicateur, zone, période, partenaire, désagrégation), au lieu de colonnes par semaine et par ZS ; ajouter une semaine ou une ZS n'exige plus de modifier le classeur.</li>
+<li><strong>Numérateur et dénominateur</strong> pour tout pourcentage ; le pourcentage se calcule après agrégation.</li>
+<li><strong>Référentiels et identifiants stables</strong> : codes texte des indicateurs, noms canoniques des ZS (à remplacer par les UID DHIS2), semaines ISO, codes des partenaires, listes déroulantes.</li>
+<li><strong>Séparation des couches</strong> : fichiers sources inchangés (<code>data/entree</code>), données normalisées (<code>data/base</code>), produits (<code>sorties</code>).</li>
+<li><strong>Traçabilité</strong> : chaque ligne garde sa source et sa date d'extraction ; chaque anomalie a un responsable et un statut ; journal d'exécution.</li>
+<li><strong>Protection des données</strong> : pas de noms ni de téléphones dans la base d'indicateurs ; listes de contacts et listes de présence hors des documents diffusés.</li>
+</ol>
+
+<h2 data-toc="34">7.2 Flux de données cible<span class="ancre">⟦H34⟧</span></h2>
+<figure class="svgfig plein">{{ svg.flux }}<figcaption>Figure 4. Flux de données cible : toutes les sources alimentent la base normalisée ; la chaîne Python contrôle, analyse et produit le SitRep CGPP et la mise à jour DOS.</figcaption></figure>
+
+<h2 data-toc="35">7.3 Modèle de données<span class="ancre">⟦H35⟧</span></h2>
+<p>La base <code>base_CGPP_MVE.xlsx</code> compte {{ n_tables }} tables, décrites colonne par colonne dans la feuille <code>dictionnaire</code> (annexe C).</p>
+<table class="t-compact">
+<thead><tr><th style="width:17%">Table</th><th style="width:42%">Contenu</th><th style="width:23%">Remplie par</th><th class="n" style="width:8%">Colonnes</th><th class="n" style="width:10%">Lignes au 12/10</th></tr></thead>
+<tbody>{% for m in modele %}<tr><td><code>{{ m.nom }}</code></td><td>{{ m.titre }}</td><td>{{ m.rempli }}</td><td class="n">{{ m.n }}</td><td class="n">{{ m.lignes }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2 data-toc="36">7.4 Calendrier, rôles et circuit de validation<span class="ancre">⟦H36⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th style="width:16%">Moment</th><th style="width:44%">Action</th><th style="width:20%">Responsable</th><th style="width:20%">Produit</th></tr></thead>
+<tbody>
+<tr><td>Chaque jour, 18 h</td><td>Fiches SBC transmises par ODK ; dépôt du SitRep national du jour</td><td>RECO, superviseurs IP ; data manager CGPP</td><td>Export ODK ; SitRep .doc</td></tr>
+<tr><td>Chaque jour, 19 h</td><td>Exécution de la chaîne ; lecture des anomalies critiques</td><td>Data manager</td><td>Rapport QC du jour</td></tr>
+<tr><td>Vendredi (dimanche au plus tard)</td><td>Saisie hebdomadaire des IP dans <code>saisie_hebdo</code> (numérateurs et dénominateurs)</td><td>Points focaux IP</td><td>Saisie complète S-1</td></tr>
+<tr><td>Samedi</td><td>Contrôle qualité ; retours aux IP ; notes de rédaction</td><td>Senior Data Analyst (SI)</td><td><code>qc_suivi</code> à jour</td></tr>
+<tr><td>Lundi matin</td><td>Génération et relecture du SitRep CGPP ; envoi au DOS</td><td>SI et coordination CGPP</td><td>SitRep CGPP ; mise à jour DOS</td></tr>
+<tr><td>Chaque mois</td><td>Visite DQA (5 indicateurs) ; revue des cibles ; rapport mensuel</td><td>SI, MEL des IP</td><td>Facteurs de vérification</td></tr>
+</tbody></table>
+
+<h2 data-toc="37">7.5 Trois phases d'évolution<span class="ancre">⟦H37⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th style="width:15%">Phase</th><th style="width:33%">Contenu</th><th style="width:26%">Atouts</th><th style="width:26%">Limites</th></tr></thead>
+<tbody>
+<tr><td><strong>1. Maintenant</strong> (semaines 42 à 44)</td><td>Base Excel normalisée, chaîne Python, canevas Word, SitRep CGPP hebdomadaire</td><td>Outils maîtrisés par l'équipe, fonctionne hors ligne, aucun serveur</td><td>Un poste avec Python et LibreOffice ; accès simultané limité</td></tr>
+<tr><td><strong>2. Un à trois mois</strong></td><td>ODK Central (formulaire SBC aligné), base PostgreSQL, extraction par API, tableau de bord (Metabase, Superset ou Power BI)</td><td>Données en temps réel, accès multi-utilisateurs, historique, contrôles à la saisie</td><td>Hébergement, administration, sécurité, coût</td></tr>
+<tr><td><strong>3. Interopérabilité</strong></td><td>Échanges avec DHIS2 (Tracker national) pour la liste linéaire et les contacts ; UID des ZS</td><td>Indicateurs de délai et de contacts connus, cohérence avec l'INSP</td><td>Accès à négocier avec l'INSP</td></tr>
+</tbody></table>
+
+<!-- =================================================================== 8 -->
+<h1 data-toc="38">8. Le SitRep amélioré<span class="ancre">⟦H38⟧</span></h1>
+
+<h2 data-toc="39">8.1 Diagnostic du SitRep national<span class="ancre">⟦H39⟧</span></h2>
+<div class="deux-col">
+<div><h3>Points forts</h3><ul>
+<li>Couverture de tous les piliers, chaque jour, par province.</li>
+<li>Tableau par ZS cohérent avec les totaux (vérifié sur les {{ n_lignes_zs }} lignes des deux numéros).</li>
+<li>Courbe par date de début avec zone de données incomplètes signalée ; carte des cumuls et des nouveaux cas.</li>
+<li>Indicateurs PoE/PoC structurés avec numérateurs et dénominateurs.</li>
+</ul></div>
+<div><h3>Points faibles</h3><ul>
+<li>Pas de contrôle avant publication : 19 anomalies en deux numéros.</li>
+<li>Agrégats calculés sans les provinces non rapportantes, puis comparés au jour précédent.</li>
+<li>Aucun indicateur de tendance (moyenne sur 7 jours, semaine épidémiologique) ni de performance (cas issus des contacts, détection post-mortem, délais).</li>
+<li>Chiffres clés dans des encadrés et sections narratives longues : difficile à lire vite et à réutiliser.</li>
+</ul></div>
+</div>
+
+<h2 data-toc="40">8.2 Recommandations pour le SitRep national<span class="ancre">⟦H40⟧</span></h2>
+<ol>
+<li>Faire passer chaque numéro par les contrôles SR-01 à SR-20 avant diffusion (la chaîne livrée les exécute en quelques secondes sur le fichier Word).</li>
+<li>Afficher le périmètre de chaque agrégat (« 4 provinces sur 6 ») et ne comparer au jour précédent que sur le même périmètre.</li>
+<li>Ajouter un tableau par semaine épidémiologique, la moyenne mobile sur 7 jours et la liste des ZS sans cas depuis 21 et 42 jours.</li>
+<li>Ajouter trois indicateurs de performance : part des nouveaux cas issus des listes de contacts, part détectée après décès, délai médian début-isolement.</li>
+<li>Ventiler les 493 décès de l'Ituri par ZS ou les exclure explicitement des létalités par ZS.</li>
+<li>Produire carte, courbe et tableaux à partir de la même extraction et à la même date.</li>
+<li>Publier avec chaque numéro une annexe de données (Excel ou CSV) reprenant les tableaux 1 à 4.</li>
+<li>Limiter chaque pilier à trois faits par province, suivis d'un tableau de chiffres clés ; ajouter une rubrique d'errata.</li>
+</ol>
+
+<h2 data-toc="41">8.3 Le SitRep CGPP : structure du canevas<span class="ancre">⟦H41⟧</span></h2>
+<p>Le SitRep CGPP n'a pas vocation à refaire le SitRep national : il en reprend les chiffres utiles, les met en regard du dispositif CGPP et ajoute la performance du programme. Il est produit chaque semaine (et à la demande) par <code>s05_generer_sitrep.py</code> à partir du canevas Word <code>canevas_sitrep_CGPP.docx</code>.</p>
+<table class="t-compact">
+<thead><tr><th style="width:24%">Section</th><th style="width:50%">Contenu</th><th style="width:26%">Origine</th></tr></thead>
+<tbody>
+<tr><td>En-tête, sources et complétude</td><td>Numéro (semaine ISO), dates des données nationales et CGPP ; provinces rapportantes, partenaires présents, âge des données, complétude du classeur</td><td>Automatique</td></tr>
+<tr><td>Huit tuiles</td><td>Cumul, décès, rythme par jour, ZS touchées ; cas dans les ZS CGPP, RECO actifs, alertes notifiées, contacts vus</td><td>Automatique</td></tr>
+<tr><td>Messages clés</td><td>Six phrases rédigées par règles (rythme, glissement géographique, foyers, détection tardive, terrain CGPP, sécurité)</td><td>Automatique, relu</td></tr>
+<tr><td>1. Situation épidémiologique nationale</td><td>Rythme sur cinq SitReps (figure) ; tableau par province avec hausses sur 14 et 3 jours et code couleur du suivi des contacts</td><td>Automatique</td></tr>
+<tr><td>2. Foyers et ZS du dispositif CGPP</td><td>ZS touchées du dispositif (cas, hausse, décès, létalité) ; foyers hors dispositif ; faits marquants</td><td>Automatique ; feuille <code>sitrep_notes</code></td></tr>
+<tr><td>3. Riposte CGPP</td><td>Tableau opérationnel des IP (totaux et taux recalculés) ; activités ; performance contre les cibles, avec période et source</td><td>Weekly Update (s02b) ; base</td></tr>
+<tr><td>4. Sécurité, défis, actions</td><td>Notes de l'équipe</td><td>Feuille <code>sitrep_notes</code></td></tr>
+<tr><td>5. Autres épidémies</td><td>Choléra, mpox, rougeole dans les provinces d'intervention ; cas suspects référés par les RECO CGPP</td><td>Feuille <code>autres_epidemies</code></td></tr>
+<tr><td>6. Points d'action</td><td>Actions des réunions avec responsable, échéance, statut</td><td>Feuille <code>points_action</code></td></tr>
+<tr><td>7. Qualité des données</td><td>Bilan des contrôles et quatre anomalies prioritaires</td><td>Automatique (s03)</td></tr>
+</tbody></table>
+<p>Les couleurs (vert, jaune, rouge, gris) doublent toujours une valeur ou un libellé écrit : le document reste lisible en noir et blanc. Les textes rédigés par règles sont relus avant diffusion ; la relecture prend une dizaine de minutes au lieu de plusieurs heures de compilation. Le SitRep tient en {{ pages_sitrep }} pages ; la figure 5 en montre l'édition générée au {{ date_donnees }} à partir de la base.</p>
+
+<h3 class="saut titre-figure">Figure 5. SitRep CGPP généré automatiquement (données au {{ date_donnees }}, fichier <code>{{ sitrep_fichier }}</code>)</h3>
+<div class="apercu">
+{% for a in apercus %}<figure><img class="capture" src="{{ a }}" alt="SitRep CGPP, page {{ loop.index }}"><figcaption>Page {{ loop.index }} : {{ ["en-tête, sources et complétude, huit tuiles, messages clés, rythme de l'épidémie", "situation par province, ZS du dispositif CGPP, faits marquants, données opérationnelles des IP", "activités, performance contre les cibles, sécurité, défis", "actions prioritaires, autres épidémies, points d'action, qualité des données"][loop.index0] if loop.index0 < 4 else "" }}.</figcaption></figure>
+{% endfor %}{% if apercus|length < 4 %}<div class="encadre lecture">
+<h3>Ce qui est automatique et ce qui est saisi</h3>
+<ul>
+<li><strong>Calculé depuis la base</strong> : en-tête et numéro (semaine ISO), encadré de complétude, huit tuiles, tableaux par province et par ZS CGPP, figure, performance contre cibles, bilan du contrôle qualité.</li>
+<li><strong>Rédigé par règles, relu</strong> : messages clés et textes d'introduction des sections 1 à 3.</li>
+<li><strong>Saisi par l'équipe</strong> : faits marquants, défis et actions (feuille <code>sitrep_notes</code>) ; points d'action des réunions (feuille <code>points_action</code>).</li>
+<li><strong>Règles de couleur</strong> : suivi des contacts vert à partir de 95&nbsp;%, jaune de 90 à 95&nbsp;%, rouge en dessous, gris si non rapporté ; hausse par ZS rouge à partir de 10 cas, jaune de 1 à 9.</li>
+<li><strong>Durée</strong> : une dizaine de secondes pour toute la chaîne, Word et PDF compris.</li>
+</ul>
+</div>{% endif %}
+</div>
+
+<!-- =================================================================== 9 -->
+<h1 data-toc="42">9. Automatiser le SitRep à partir des bases Excel<span class="ancre">⟦H42⟧</span></h1>
+
+<h2 data-toc="43">9.1 Principe<span class="ancre">⟦H43⟧</span></h2>
+<div class="deux-col">
+<figure class="svgfig">{{ svg.chaine }}<figcaption>Figure 6. Chaîne d'automatisation : sept étapes, chacune lisant et écrivant la base Excel.</figcaption></figure>
+<div>
+<p>La meilleure option pour l'équipe aujourd'hui est la combinaison <strong>Excel + Python + canevas Word</strong> : les données restent dans des classeurs que tout le monde sait ouvrir, le calcul et le contrôle sont faits par du code testable et répétable, et la mise en page reste dans un document Word que l'équipe modifie sans programmer (balises <code>{{ "{{ nom }}" }}</code> remplies par la bibliothèque <code>docxtpl</code>). Le PDF est produit par LibreOffice.</p>
+<p>Chaque étape est indépendante et relançable ; la chaîne complète prend une dizaine de secondes. Elle tolère l'absence d'une source (ND signalé, sections vides remplacées par un message) et ne modifie jamais les fichiers d'entrée.</p>
+</div>
+</div>
+
+<h2 data-toc="44">9.2 Organisation des fichiers<span class="ancre">⟦H44⟧</span></h2>
+<pre>cgpp_si/
+  README.md                    mode d'emploi détaillé
+  config.yaml                  chemins, ZS et partenaires CGPP, seuils
+  pipeline.py                  lance toute la chaîne (ou des étapes choisies)
+  lancer.bat                   lancement sous Windows (double-clic ou tâche planifiée)
+  requirements.txt             bibliothèques Python
+  scripts/
+    commun.py                  modèle de données (SCHEMA), lecture et écriture de la base, utilitaires
+    referentiel_indicateurs.py matrice maîtresse des 128 indicateurs
+    s00_construire_canevas.py  canevas Excel (listes, dictionnaire, tableau de suivi par formules)
+    s01_extraire_sitreps.py    SitReps nationaux .doc/.docx vers la base
+    s02_extraire_indicateurs.py référentiels, classeur IP en format long, historique, réunions
+    s02b_extraire_weekly_updates.py  Weekly Updates : série nationale, tableau opérationnel
+    s03_controle_qualite.py    règles de contrôle, rapport QC, suivi des anomalies
+    s04_analyses.py            tableaux, chiffres clés (resultats.json), graphiques
+    s05_generer_sitrep.py      SitRep CGPP en .docx et .pdf
+  modeles/
+    canevas_base_CGPP_MVE.xlsx  base vide (à copier)
+    canevas_sitrep_CGPP.docx    canevas Word du SitRep (modifiable dans Word)
+    outils/                     reconstruction du canevas Word (Node.js, facultatif)
+  outils/rapport/              générateur du présent rapport (HTML, Chromium, polices Inter)
+  data/entree/                 fichiers sources (sitreps/, weekly_updates/, ...), jamais modifiés
+  data/ref/                    observations manuelles, historique, notes initiales
+  data/base/base_CGPP_MVE.xlsx base normalisée
+  sorties/                     qc/, analyses/, figures/, sitrep/, journal_pipeline.log</pre>
+
+<h2 data-toc="45">9.3 Mode d'emploi<span class="ancre">⟦H45⟧</span></h2>
+<pre># 1. Installation (une fois) : Python 3.11 ou plus et LibreOffice
+pip install -r requirements.txt
+#    sous Windows, indiquer dans config.yaml :
+#    libreoffice: "C:/Program Files/LibreOffice/program/soffice.exe"
+
+# 2. Chaque jour ou chaque semaine : déposer les fichiers dans data/entree/, puis
+python pipeline.py                      # toute la chaîne
+python pipeline.py --etapes qc,sitrep   # seulement contrôle et SitRep
+python pipeline.py --date 2026-10-10    # SitRep pour une date de données précise
+
+# 3. Planification sous Windows (chaque samedi à 18 h)
+schtasks /create /sc weekly /d SAT /st 18:00 /tn SitRepCGPP /tr "C:\cgpp_si\lancer.bat"</pre>
+<p>Les saisies manuelles (<code>saisie_hebdo</code>, <code>points_action</code>, <code>sitrep_notes</code>, <code>qc_suivi</code>) sont conservées d'une exécution à l'autre ; l'option <code>--reinitialiser</code> repart d'une base vide et ne s'utilise qu'en connaissance de cause.</p>
+
+<h2 data-toc="46">9.4 Extraits de code<span class="ancre">⟦H46⟧</span></h2>
+<h3>Recalcul de tout pourcentage écrit dans le texte</h3>
+<pre>("pct_puis_fraction", r"(PCT)\s?%[^()%\d]{0,45}\(\s*(NUM)\s*/\s*(NUM)\s*\)")   # 84,2&nbsp;% (315/374)
+("a_sur_b_pct", r"(NUM)\s+(...)?sur\s+(NUM)(...)?\s*\(\s*(PCT)\s?%\s*\)")         # 123 feedbacks sur 151 (81,5&nbsp;%)
+recalc = round(100 * a / b, 1)
+statut = "OK" if abs(pct_publie - recalc) &lt;= tolerance else "ÉCART"     # tolérance : 0,15 point</pre>
+<h3>Remplissage du canevas Word</h3>
+<pre>tpl = DocxTemplate("modeles/canevas_sitrep_CGPP.docx")
+ctx = contexte(cfg)                      # chiffres, tableaux et messages calculés depuis la base
+ctx["figure_rythme"] = InlineImage(tpl, "sorties/figures/f6_rythme.png", width=Mm(150))
+tpl.render(ctx); tpl.save("sorties/sitrep/SitRep_CGPP_2026-10-10.docx")
+inserer_tableau(doc, "[[TABLEAU_OPERATIONS]]", entetes, lignes, largeurs)   # une colonne par IP et province
+vers_pdf("sorties/sitrep/SitRep_CGPP_2026-10-10.docx")     # LibreOffice en mode sans interface</pre>
+<h3>Tableau de suivi dans Excel (sans additionner de pourcentages)</h3>
+<pre>numérateur cumulé   =SUMIFS(saisie_hebdo!$L:$L, saisie_hebdo!$I:$I, $A5)
+dénominateur cumulé =SUMIFS(saisie_hebdo!$M:$M, saisie_hebdo!$I:$I, $A5)
+réalisé             =IF(D5="Pourcentage", G5/H5*100, G5)</pre>
+
+<h2 data-toc="47">9.5 Faire évoluer la chaîne<span class="ancre">⟦H47⟧</span></h2>
+<ul>
+<li><strong>Ajouter un indicateur</strong> : une ligne dans <code>referentiel_indicateurs.py</code> (ou directement dans <code>ref_indicateurs</code>) ; il apparaît dans le tableau de suivi et peut être ajouté à la liste du SitRep.</li>
+<li><strong>Ajouter une règle de contrôle</strong> : une fonction de quelques lignes dans <code>s03_controle_qualite.py</code> qui appelle <code>res(...)</code> avec l'identifiant, la gravité et la recommandation.</li>
+<li><strong>Changer la mise en page</strong> : modifier le canevas Word en gardant chaque balise d'un seul tenant.</li>
+<li><strong>Ajouter une ZS ou un partenaire</strong> : <code>config.yaml</code> (bloc <code>zones_cgpp</code>) ; aucune colonne à créer.</li>
+<li><strong>Nouveau Weekly Update</strong> : le déposer dans <code>data/entree/weekly_updates/</code> ; les tableaux sont lus automatiquement, les activités narratives se codent dans <code>data/ref/weekly_updates_activites.csv</code> (indicateur, valeur, extrait source).</li>
+<li><strong>Changer de format de SitRep national</strong> : les tableaux sont repérés par leurs en-têtes ; si l'INSP change sa maquette, seule la fonction <code>trouver_tableaux</code> est à adapter.</li>
+</ul>
+
+<!-- =================================================================== 10 -->
+<h1 data-toc="48">10. Feuille de route et décisions<span class="ancre">⟦H48⟧</span></h1>
+<table>
+<thead><tr><th style="width:15%">Échéance</th><th style="width:55%">Actions</th><th style="width:30%">Responsables</th></tr></thead>
+<tbody>
+<tr><td><strong>Lundi 12/10</strong></td><td>Envoyer la mise à jour DOS en signalant les lacunes (ADRA et IMC sans aucune saisie, World Vision arrêté à la semaine 37, IRC absent) ; relancer ADRA, IMC, IRC et World Vision ; partager ce rapport avec la coordination et Dr Barclay</td><td>SI, coordination CGPP</td></tr>
+<tr><td><strong>Semaine 42</strong></td><td>Décider du jeu de cibles ; adopter la matrice maîtresse ; saisir les semaines 36 à 41 dans <code>saisie_hebdo</code> ; obtenir l'XLSForm ODK et la série des SitReps ; produire le tableau du Weekly Update à partir de la base, avec IMC et IRC ; transmettre la liste d'errata à l'INSP ; corriger le gabarit de compte rendu (points d'action)</td><td>Coordination, points focaux IP, SI</td></tr>
+<tr><td><strong>Semaines 43 et 44</strong></td><td>Premier SitRep CGPP hebdomadaire validé ; formulaire ODK aligné (champs nouveaux) ; formation d'une demi-journée des points focaux à la saisie en format long ; première visite DQA</td><td>SI, MEL des IP</td></tr>
+<tr><td><strong>Novembre</strong></td><td>Historique complet des SitReps dans la base ; indicateurs SURV-20 à SURV-30 calculés ; tableau de bord (phase 2) ; revue des cibles par IP et par province</td><td>SI, data managers</td></tr>
+<tr><td><strong>Décembre à janvier</strong></td><td>ODK Central et PostgreSQL ; interopérabilité DHIS2 ; note d'apprentissage sur la SBC et la détection post-mortem</td><td>SI, INSP, CGPP</td></tr>
+</tbody></table>
+<div class="encadre decision">
+<h3>Ce dont l'équipe SI a besoin</h3>
+<ul>
+<li>La décision sur les cibles (DOS ou Tranche 5) et leur ventilation par partenaire.</li>
+<li>Les zones de santé d'IRC et un point focal données par partenaire.</li>
+<li>Le formulaire ODK (XLSForm) et un export récent de la fiche SBC.</li>
+<li>La série complète des SitReps nationaux et, si possible, l'accès à la liste linéaire des cas (DHIS2 Tracker).</li>
+<li>Un poste de travail avec Python et LibreOffice pour exécuter la chaîne.</li>
+</ul>
+</div>
+
+<!-- =================================================================== Annexes -->
+<h1 data-toc="49">Annexe A. Liste des anomalies<span class="ancre">⟦H49⟧</span></h1>
+<p class="petit">{{ anomalies|length }} anomalies (échecs et points à vérifier) classées par gravité. Le détail complet, y compris les contrôles conformes, figure dans <code>{{ qc.fichier }}</code>.</p>
+<table class="t-compact">
+<thead><tr><th style="width:7%">Règle</th><th style="width:8%">Gravité</th><th style="width:25%">Source et objet</th><th style="width:20%">Attendu</th><th style="width:40%">Observé</th></tr></thead>
+<tbody>{% for a in anomalies %}<tr><td class="nw">{{ a.id }}</td><td><span class="etiquette {{ 'e-crit' if a.gravite == 'Critique' else ('e-maj' if a.gravite == 'Majeure' else 'e-min') }}">{{ a.gravite }}</span></td><td>{{ a.source }} : {{ a.objet }}</td><td>{{ a.attendu }}</td><td>{{ a.observe }}</td></tr>{% endfor %}</tbody>
+</table>
+<h2 data-toc="50">Catalogue des règles de contrôle<span class="ancre">⟦H50⟧</span></h2>
+<table class="t-compact">
+<thead><tr><th style="width:8%">Règle</th><th style="width:16%">Famille</th><th style="width:58%">Description</th><th class="n" style="width:9%">Contrôles</th><th class="n" style="width:9%">Anomalies</th></tr></thead>
+<tbody>{% for r in regles %}<tr><td class="nw">{{ r.id }}</td><td>{{ r.famille }}</td><td>{{ r.description }}</td><td class="n">{{ r.n }}</td><td class="n">{{ r.echecs }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h1 data-toc="51">Annexe B. Matrice maîtresse des indicateurs<span class="ancre">⟦H51⟧</span></h1>
+<p class="petit">ID : identifiant stable. B. : numéro dans la matrice de Dr Barclay. G. : rang dans le cadre global. Statut : <span class="etiquette e-ex">existant</span> <span class="etiquette e-cor">à corriger</span> <span class="etiquette e-new">nouveau</span>. Les définitions complètes (numérateur, dénominateur, source, champ, désagrégation, seuil) sont dans la feuille <code>ref_indicateurs</code>.</p>
+<table class="t-compact">
+<thead><tr><th style="width:8%">ID</th><th style="width:39%">Indicateur</th><th style="width:9%">Type</th><th class="n" style="width:11%">Cible DOS</th><th class="n" style="width:13%">Cible T5</th><th class="c" style="width:5%">B.</th><th class="c" style="width:4%">G.</th><th style="width:11%">Statut</th></tr></thead>
+<tbody>{% for i in annexe_ind %}<tr><td class="nw">{{ i.id }}</td><td>{{ i.libelle }}</td><td>{{ i.type }}</td><td class="n">{{ i.cible_dos }}</td><td class="n">{{ i.cible_t5 }}</td><td class="c">{{ i.barclay }}</td><td class="c">{{ i.glob }}</td><td><span class="etiquette {{ 'e-new' if i.statut == 'nouveau' else ('e-cor' if i.statut == 'à corriger' else 'e-ex') }}">{{ i.statut }}</span></td></tr>{% endfor %}</tbody>
+</table>
+
+<h1 data-toc="52">Annexe C. Modèle de données et dictionnaire<span class="ancre">⟦H52⟧</span></h1>
+<p>Le dictionnaire complet ({{ n_colonnes }} colonnes, type, description, caractère obligatoire, valeurs autorisées) est généré automatiquement dans la feuille <code>dictionnaire</code> du canevas. Règles communes :</p>
+<ul>
+<li>Dates au format JJ/MM/AAAA ; semaines ISO (lundi au dimanche) ; année et numéro de semaine dans deux colonnes.</li>
+<li>Provinces, partenaires, indicateurs, types de site et statuts choisis dans des listes ; zones de santé choisies dans <code>ref_zones</code>.</li>
+<li>Cellule vide = non rapporté ; zéro = rapporté nul. Aucune cellule fusionnée, aucune ligne de total dans les tables.</li>
+<li>Clés d'unicité : SitRep et province ou ZS pour les faits épidémiologiques ; période, partenaire, ZS, indicateur et désagrégation pour la saisie hebdomadaire ; date et aire de santé pour la fiche SBC.</li>
+</ul>
+<table class="t-compact">
+<thead><tr><th style="width:20%">Table</th><th style="width:55%">Clé d'unicité</th><th class="n">Colonnes</th></tr></thead>
+<tbody>{% for m in modele %}<tr><td><code>{{ m.nom }}</code></td><td>{{ m.cle }}</td><td class="n">{{ m.n }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h1 class="suite" data-toc="53">Annexe D. Livrables<span class="ancre">⟦H53⟧</span></h1>
+<table class="t-compact">
+<thead><tr><th style="width:42%">Fichier</th><th style="width:58%">Contenu</th></tr></thead>
+<tbody>
+<tr><td><code>Rapport_SI_CGPP_MVE17_2026-10-12.pdf</code></td><td>Le présent rapport</td></tr>
+<tr><td><code>cgpp_si/</code> (archive)</td><td>Boîte à outils complète : scripts, configuration, canevas, données d'entrée, base et sorties</td></tr>
+<tr><td><code>modeles/canevas_base_CGPP_MVE.xlsx</code></td><td>Base vide : 25 feuilles, listes déroulantes, ligne d'exemple sur les feuilles de saisie, tableau de suivi par formules, dictionnaire</td></tr>
+<tr><td><code>modeles/canevas_sitrep_CGPP.docx</code></td><td>Canevas Word du SitRep CGPP (balises docxtpl)</td></tr>
+<tr><td><code>data/base/base_CGPP_MVE.xlsx</code></td><td>Base remplie avec les données disponibles au 12/10 et la matrice maîtresse</td></tr>
+<tr><td><code>sorties/qc/{{ qc.fichier }}</code></td><td>Rapport de contrôle qualité ({{ qc.n }} contrôles)</td></tr>
+<tr><td><code>sorties/analyses/analyses.xlsx</code></td><td>Tableaux d'analyse (provinces, ZS, ZS CGPP, décès communautaires, contacts, alertes, laboratoire, réalisations, complétude)</td></tr>
+<tr><td><code>sorties/sitrep/SitRep_CGPP_2026-10-10.docx</code> et <code>.pdf</code></td><td>SitRep CGPP de démonstration généré automatiquement</td></tr>
+<tr><td><code>sorties/figures/</code></td><td>Graphiques en SVG et PNG (dont le rythme par intervalle, f6)</td></tr>
+<tr><td><code>scripts/s02b_extraire_weekly_updates.py</code></td><td>Lecture des Weekly Updates CGPP (série nationale, tableau opérationnel) ; activités codées dans <code>data/ref/</code></td></tr>
+<tr><td><code>outils/rapport/</code></td><td>Générateur du présent rapport (HTML et Chromium)</td></tr>
+</tbody></table>
+
+</body></html>

@@ -1,0 +1,38 @@
+digraph G {
+  rankdir=TB; newrank=true;
+  graph [fontname="Inter", fontsize=9.5, nodesep=0.10, ranksep=0.36, bgcolor="white", pad=0.1];
+  node [shape=box, style="rounded,filled", fontname="Inter", fontsize=10, color="#1F3864", fillcolor="#F3F6FA", penwidth=0.9, margin="0.06,0.04"];
+  edge [color="#52514E", arrowsize=0.5, penwidth=0.8, fontname="Inter", fontsize=7.5, fontcolor="#52514E"];
+  subgraph cluster_src { label="1. Sources (producteurs)"; style="rounded"; color="#C3C2B7"; fontcolor="#52514E"; labeljust="l";
+    sbc [label="Fiche SBC\njournalière (ODK)"];
+    ip [label="Saisie hebdo\ndes IP (vendredi)"];
+    cr [label="Comptes rendus\nde réunion"];
+    sitrep [label="SitRep national\n(INSP, .doc)"];
+    plans [label="Plans de travail\n(cibles)"];
+    wu [label="Weekly Update\n(au bailleur)"];
+  }
+  subgraph cluster_base { label="2. Base Excel normalisée"; style="rounded"; color="#2a78d6"; fontcolor="#1F3864"; labeljust="l";
+    prog [label="Données de programme\nsaisies IP et SBC,\nréunions, actions", fillcolor="#DCE6F2"];
+    faits [label="Faits épidémiologiques\nprovinces et ZS,\nalertes, contacts, labo", fillcolor="#DCE6F2"];
+    ref [label="Référentiels\nZS, IP, semaines,\n128 indicateurs", fillcolor="#DCE6F2"];
+  }
+  subgraph cluster_trt { label="3. Traitements (pipeline.py)"; style="rounded"; color="#C3C2B7"; fontcolor="#52514E"; labeljust="l";
+    qc [label="s03  Contrôle qualité\n(règles automatiques)"];
+    ana [label="s04  Analyses\net graphiques"];
+    gen [label="s05  Génération\ndu SitRep CGPP"];
+  }
+  subgraph cluster_out { label="4. Produits"; style="rounded"; color="#C3C2B7"; fontcolor="#52514E"; labeljust="l";
+    qcr [label="Rapport qualité,\nretours aux sources"];
+    srep [label="SitRep CGPP\n(Word et PDF)"];
+    dos [label="Mise à jour DOS\n(chaque lundi)"];
+    tdb [label="Tableau de bord\n(phase 2)", style="rounded,dashed", fillcolor="white"];
+  }
+  {rank=same; sbc; ip; cr; sitrep; wu; plans}
+  {rank=same; prog; faits; ref}
+  {rank=same; qc; ana; gen}
+  {rank=same; qcr; srep; dos; tdb}
+  sbc -> prog; ip -> prog; cr -> prog; sitrep -> faits [label=" s01"]; wu -> faits [label=" s02b"]; wu -> prog; plans -> ref [label=" s02"];
+  prog -> qc; faits -> qc; ref -> qc;
+  qc -> ana; ana -> gen;
+  qc -> qcr; gen -> srep; srep -> dos; gen -> tdb [style=dashed];
+}

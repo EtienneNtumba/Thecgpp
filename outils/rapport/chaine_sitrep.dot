@@ -1,0 +1,16 @@
+digraph G {
+  rankdir=TB;
+  graph [fontname="Inter", fontsize=9, nodesep=0.18, ranksep=0.22, bgcolor="white", pad=0.12];
+  node [shape=box, style="rounded,filled", fontname="Inter", fontsize=8.6, color="#1F3864", fillcolor="#F3F6FA", penwidth=0.9, margin="0.10,0.045", width=2.6];
+  edge [color="#52514E", arrowsize=0.5, penwidth=0.8];
+  d [label="Dépôt des fichiers de la semaine\nSitRep (.doc), Weekly Update, export ODK, saisies IP", fillcolor="white", style="rounded,dashed"];
+  s00 [label="s00  Canevas Excel\n(une fois ; recréé si le modèle change)"];
+  s01 [label="s01  Extraction des SitReps\ntableaux, encadrés, texte, pourcentages"];
+  s02 [label="s02  Référentiels et saisies\nclasseur IP en format long, matrice"];
+  s02b [label="s02b  Weekly Updates CGPP\nsérie nationale, tableau opérationnel"];
+  s03 [label="s03  Contrôle qualité\nrapport_qc_AAAA-MM-JJ.xlsx, qc_suivi"];
+  s04 [label="s04  Analyses\nanalyses.xlsx, resultats.json, figures"];
+  s05 [label="s05  SitRep CGPP\ncanevas Word + données = .docx + .pdf"];
+  v [label="Relecture humaine et validation\n(10 minutes), puis diffusion", fillcolor="#DCE6F2"];
+  d -> s01; s00 -> s01 [style=dashed]; s01 -> s02 -> s02b -> s03 -> s04 -> s05 -> v;
+}

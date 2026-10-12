@@ -1,0 +1,9 @@
+# Générateur du rapport PDF (facultatif) : en plus de ../../requirements.txt
+# Installation : pip install -r outils/rapport/requirements-rapport.txt
+#                python -m playwright install chromium
+playwright>=1.40
+pdfplumber>=0.10
+pypdf>=4.0
+reportlab>=4.0
+MarkupSafe>=2.1
+# fonttools>=4.40   (seulement pour preparer_polices.py, déjà exécuté : les polices sont fournies)

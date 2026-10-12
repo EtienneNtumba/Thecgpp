@@ -1,0 +1,10 @@
+# Chaîne SI CGPP (pipeline.py) : Python 3.11 ou plus, et LibreOffice installé sur le poste.
+# Installation : pip install -r requirements.txt
+pandas>=2.2
+openpyxl>=3.1
+XlsxWriter>=3.1
+python-docx>=1.1
+docxtpl>=0.16
+matplotlib>=3.8
+PyYAML>=6.0
+Jinja2>=3.1

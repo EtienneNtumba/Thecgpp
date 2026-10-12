@@ -1,0 +1,60 @@
+# Configuration de la chaîne SI CGPP RDC - riposte MVE-17 (virus Bundibugyo)
+# Tous les chemins sont relatifs au dossier du projet (cgpp_si/).
+
+projet: "CGPP RDC - Riposte MVE-17 (virus Bundibugyo)"
+
+chemins:
+  entree_sitreps: data/entree/sitreps          # SitReps nationaux (.doc ou .docx)
+  entree_reunions: data/entree/reunions        # comptes rendus de coordination (.doc/.docx)
+  entree_weekly: data/entree/weekly_updates   # Weekly Updates CGPP au bailleur (.docx, en anglais)
+  classeur_indicateurs: data/entree/indicateurs/Classeur_Indicateurs_CGPP.xlsx
+  cadre_global_csv: data/entree/indicateurs/Cadre_Indicateurs_Global.csv
+  matrice_barclay: data/entree/indicateurs/Matrice_Indicateurs_Dr_Barclay.xlsx
+  plan_dos: data/entree/plans/PlanTravail_DOS_2026-09-16.docx
+  plan_tranche5: data/entree/plans/PlanTravail_Tranche5_IP.docx
+  fiche_sbc: data/entree/sbc/Fiche_SBC_Journaliere.xlsx
+  referentiels: data/ref
+  intermediaire: data/intermediaire
+  base: data/base/base_CGPP_MVE.xlsx           # la base de données Excel normalisée
+  canevas_base: modeles/canevas_base_CGPP_MVE.xlsx
+  canevas_sitrep: modeles/canevas_sitrep_CGPP.docx
+  sorties_qc: sorties/qc
+  sorties_analyses: sorties/analyses
+  sorties_figures: sorties/figures
+  sorties_sitrep: sorties/sitrep
+
+# Exécutable LibreOffice (conversion .doc -> .docx et .docx -> .pdf)
+# Windows : "C:/Program Files/LibreOffice/program/soffice.exe"
+libreoffice: soffice
+
+# Zones de santé présentes dans le classeur hebdomadaire CGPP -> partenaire de mise en oeuvre
+zones_cgpp:
+  Goma: {province: Nord-Kivu, ip: WV}
+  Karisimbi: {province: Nord-Kivu, ip: WV}
+  Rwanguba: {province: Nord-Kivu, ip: WV}
+  Kalunguta: {province: Nord-Kivu, ip: WV}
+  Mutwanga: {province: Nord-Kivu, ip: WV}
+  Uvira: {province: Sud-Kivu, ip: WV}
+  Nundu: {province: Sud-Kivu, ip: WV}
+  Nyangezi: {province: Sud-Kivu, ip: WV}
+  Rwampara: {province: Ituri, ip: ADRA}
+  Lita: {province: Ituri, ip: ADRA}
+  Beni: {province: Nord-Kivu, ip: IMC}
+  Katwa: {province: Nord-Kivu, ip: IMC}
+
+partenaires:
+  WV: World Vision RDC
+  ADRA: Adventist Development and Relief Agency
+  IMC: International Medical Corps
+  IRC: International Rescue Committee
+
+seuils:
+  suivi_contacts_national: 95.0      # seuil utilisé par les SitReps nationaux
+  suivi_contacts_cible_cgpp: 90.0    # cible CGPP (plan DOS)
+  verification_alertes_24h: 80.0     # cible plan DOS
+  tolerance_pourcentage: 0.15        # écart toléré (points) entre % publié et % recalculé
+  foyer_hausse_pct: 15.0             # hausse relative des cas cumulés signalant un foyer actif
+  foyer_hausse_min_cas: 5            # hausse absolue minimale pour signaler un foyer
+
+# Date du SitRep CGPP à générer : "auto" = dernier SitRep national présent dans la base
+date_rapport: auto
